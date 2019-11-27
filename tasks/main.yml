@@ -1,0 +1,35 @@
+---
+- name: Include vars
+  include_vars: "main.yml"
+
+#- name: Get go binaries to copy
+#  find:
+#    paths: "{{ GOPATH + '/bin' }}"
+#    file_type: file
+#  register: copy_files
+#  when: go_get is defined
+
+#- name: Copy Go binaries to /usr/local/bin
+#  copy:
+#    src: "{{ item.path }}"
+#    dest: "/usr/local/bin"
+#    remote_src: true
+#    mode: 0755
+#  loop: "{{ copy_files.files }}"
+#  when: copy_files is defined
+  
+- name: Get latest releases
+  shell: "set -o pipefail; curl -s https://api.github.com/repos/{{ item.value.repo }}/releases \
+  | grep \"browser_download_url.*linux_amd64*\" | cut -d : -f 2,3 | tr -d \\\" | awk 'NR==1 {print $1}'"
+  args:
+    warn: false
+    executable: /bin/bash
+  register: release
+  loop: "{{ tools|dict2items }}"
+  when: tools is defined
+  changed_when: false
+
+- name: debug release
+  debug:
+    msg: "{{ item.value.stdout item.value.item.repo }}"
+  loop: "{{ release|dict2items }}"

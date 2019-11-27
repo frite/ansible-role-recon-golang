@@ -1,0 +1,51 @@
+---
+dependency:
+  name: galaxy
+driver:
+  name: docker
+lint:
+  name: yamllint
+  options:
+    config-file: molecule/default/yaml-lint.yml
+platforms:
+  - name: centos7
+    image: centos:7
+  - name: centos8
+    image: centos:8
+  - name: ubuntu1804
+    image: ubuntu:18.04
+  - name: ubuntu1910
+    image: ubuntu:19.10
+  - name: ubuntu1904
+    image: ubuntu:19.04
+  - name: ubuntu1604
+    image: ubuntu:16.04
+  - name: debian
+    image: debian:buster
+provisioner:
+  name: ansible
+  env:
+    ANSIBLE_ROLES_PATH: $HOME/.ansible/roles
+  lint:
+    name: ansible-lint
+  inventory:
+    group_vars:
+      all:
+        go_get:
+          - name: ffuf
+            url: github.com/ffuf/ffuf
+        tools:
+          amass:
+            name: 'amass'
+            checksum_file: 'amass_checksums.txt'
+            repo: 'OWASP/Amass'
+          aquatone:
+            name: 'aquatone'
+            checksum_file: 'checksums.txt'
+            repo: 'michenriksen/aquatone'
+scenario:
+  name: default
+verifier:
+  name: testinfra
+  lint:
+    name: flake8

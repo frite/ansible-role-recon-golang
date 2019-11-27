@@ -1,0 +1,14 @@
+---
+# Default shell sourced files
+recon_golang_sourced_file:
+  Ubuntu: .profile
+  Debian: .profile
+  CentOS: .bash_profile
+
+GO111MODULE: "on"
+GOROOT: /usr/local/go
+GOPROXY: https://proxy.golang.org
+GOPATH: "{{ Go_home_dir + '/go' }}"
+golang_shell_profile: "{{ Go_home_dir + '/' + recon_golang_sourced_file[ansible_distribution] }}"
+
+
