@@ -5,6 +5,15 @@ recon_golang_sourced_file:
   Debian: .profile
   CentOS: .bash_profile
 
+apt_packages:
+  - curl
+
+dnf_packages:
+  - curl
+
+yum_packages:
+  - curl
+
 GO111MODULE: "on"
 GOROOT: /usr/local/go
 GOPROXY: https://proxy.golang.org

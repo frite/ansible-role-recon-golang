@@ -31,5 +31,5 @@
 
 - name: debug release
   debug:
-    msg: "{{ item.value.stdout item.value.item.repo }}"
+    msg: "{{ item.value.stdout }}"
   loop: "{{ release|dict2items }}"
