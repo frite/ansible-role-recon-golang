@@ -5,19 +5,8 @@ recon_golang_sourced_file:
   Debian: .profile
   CentOS: .bash_profile
 
-apt_packages:
-  - curl
-
-dnf_packages:
-  - curl
-
-yum_packages:
-  - curl
-
 GO111MODULE: "on"
 GOROOT: /usr/local/go
 GOPROXY: https://proxy.golang.org
 GOPATH: "{{ Go_home_dir + '/go' }}"
 golang_shell_profile: "{{ Go_home_dir + '/' + recon_golang_sourced_file[ansible_distribution] }}"
-
-

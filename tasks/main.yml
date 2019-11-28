@@ -2,22 +2,12 @@
 - name: Include vars
   include_vars: "main.yml"
 
-#- name: Get go binaries to copy
-#  find:
-#    paths: "{{ GOPATH + '/bin' }}"
-#    file_type: file
-#  register: copy_files
-#  when: go_get is defined
+- name: Include OS tasks
+  include: "os.yml"
 
-#- name: Copy Go binaries to /usr/local/bin
-#  copy:
-#    src: "{{ item.path }}"
-#    dest: "/usr/local/bin"
-#    remote_src: true
-#    mode: 0755
-#  loop: "{{ copy_files.files }}"
-#  when: copy_files is defined
-  
+- name: Include Golang tasks
+  include: "go.yml"
+
 - name: Get latest releases
   shell: "set -o pipefail; curl -s https://api.github.com/repos/{{ item.value.repo }}/releases \
   | grep \"browser_download_url.*linux_amd64*\" | cut -d : -f 2,3 | tr -d \\\" | awk 'NR==1 {print $1}'"
@@ -29,7 +19,86 @@
   when: tools is defined
   changed_when: false
 
-- name: debug release
-  debug:
-    msg: "{{ item.value.stdout }}"
-  loop: "{{ release|dict2items }}"
+- name: Update tools to include release URLs
+  set_fact:
+    releases: "{{ releases | default({}) | combine(
+      {
+        item.item.value.name: {
+          'name': item.item.value.name,
+          'repo': item.item.value.repo,
+          'checksum_file': item.item.value.checksum_file,
+          'release_url': item.stdout
+        }
+      }
+    ) }}"
+  loop: "{{ release.results }}"
+
+- name: Get checksums  # noqa 503
+  shell: "set -o pipefail;
+  curl -L $(dirname {{ item.value.release_url }})/{{ item.value.checksum_file }}
+  | grep linux_amd \
+  | awk '{ print $1 }'"
+  args:
+    warn: false
+    executable: /bin/bash
+  register: checksums
+  loop: "{{ releases|dict2items }}"
+  changed_when: false
+
+- name: Update tools to include checksums
+  set_fact:
+    installs: "{{ installs | default({}) | combine(
+      {
+        item.item.value.name: {
+          'name': item.item.value.name,
+          'repo': item.item.value.repo,
+          'checksum_file': item.item.value.checksum_file,
+          'release_url': item.item.value.release_url,
+          'checksum': item.stdout
+        }
+      }
+    ) }}"
+  loop: "{{ checksums.results }}"
+
+- name: Download tools  # noqa 503
+  get_url:
+    url: "{{ item.value.release_url }}"
+    dest: /tmp/{{ item.value.name }}}.zip
+    checksum: "sha256:{{ item.value.checksum }}"
+  loop: "{{ installs|dict2items }}"
+
+- name: Unzip to /tmp  # noqa 503
+  unarchive:
+    src: /tmp/{{ item.value.name }}}.zip
+    dest: /tmp/
+    remote_src: true
+    mode: 0755
+  loop: "{{ installs|dict2items }}"
+  changed_when: false
+
+- name: Get files to copy  # noqa 503
+  shell: "set -o pipefail;
+  find /tmp/ -executable -type f -name '{{ item.value.name }}*' "
+  args:
+    warn: false
+    executable: /bin/bash
+  register: file_paths
+  loop: "{{ installs|dict2items }}"
+  changed_when: false
+
+- name: Copy files
+  copy:
+    src: "{{ item.stdout }}"
+    dest: "/usr/local/bin"
+    owner: "root"
+    group: "root"
+    mode: "0755"
+    remote_src: true
+  loop: "{{ file_paths.results }}"
+
+- name: Cleanup leftover zips  # noqa 503
+  file:
+    path: /tmp/{{ item.value.name }}.zip
+    state: absent
+  loop: "{{ installs|dict2items }}"
+  changed_when: false

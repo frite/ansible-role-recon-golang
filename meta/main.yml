@@ -32,5 +32,3 @@ galaxy_info:
     - python
 
 dependencies: []
-#  - frite.recon_package_manager
-# - fubarhouse.golang

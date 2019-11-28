@@ -1,0 +1,12 @@
+---
+- name: Register required packages
+  set_fact:
+    "{{ ansible_pkg_mgr }}_packages":
+      - curl
+      - tar
+      - zip
+      - unzip
+
+- name: Install required packages
+  include_role:
+    name: frite.recon_package_manager
